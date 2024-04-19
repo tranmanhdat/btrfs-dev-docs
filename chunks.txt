@@ -72,21 +72,24 @@ block_group_offset = 4596957184 - 4593811456 = 3145728 => 3m
 Btrfs actually uses the word "stripe" for 2 different types of stripe. The first
 is the already introduced physical stripe. The second type stripe is the logical
 stripe. Logical stripe is the granularity at which writes are mapped in btrfs, 
-that's generally io_width which is currently hard-coded at 64k. To calculate 
+that's generally io_width which is currently hard-coded at 65536 (64kb). To calculate 
 the logical stripe the block_group_offset is divided by logical stripe size : 
 
 logical_stripe = [block group offset ] / [logical stripe size]
-logical_stripe = 3145728 / 64k = 48
+logical_stripe = 3145728 / 65536 = 48
+offset = [block group offset ] mod [logical stripe size]
+offset = 3145728 % 65536 = 0
 
 Aimed  with those 2 variables it's possible to calculate the physical address
 by: 
 
-physical_address = [physical stripe start] + [logical_stripe] * [logical stripe_size]
-physical_address = 1351614464 + 48 * 64k = 1351614464 + 3145728 = 1354760192
+physical_address = [physical stripe start] + [logical_stripe] * [logical stripe_size] + [offset]
+physical_address_dev_1 = 2425356288 + 48 * 65536 + 0 = 2428502016
+physical_address_dev_2 = 2446327808 + 48 * 65536 + 0 = 2449473536
 
-So logical address 4596957184 corresponds to physical address 1354760192 for 
-that particular device. For the other chunk since the base address is different 
-naturally the end result is also going to be different.
+So logical address 4596957184 corresponds to physical address 2428502016 for device 1, and
+physical address 2449473536 for device 2 (because of RAID1 config). For the other chunk since
+the base address is different naturally the end result is also going to be different.
 
 The important thing to consider is "stripe" refers to more than one thing in 
 btrfs parlance, namely it could refer to a physical stripe - the physical chunk, 
